@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schematic Hoster</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Schematic Hoster</h1>
+        <p>Schematicファイルをドラッグ＆ドロップしてURLを発行</p>
+        
+        <div class="upload-area" id="drop-zone">
+            <div class="icon">📁</div>
+            <p>ここにファイルをドロップ<br>またはクリックして選択</p>
+            <input type="file" id="file-input" accept=".schem,.schematic" hidden>
+        </div>
+
+        <div id="result" class="hidden">
+            <p>アップロード完了！</p>
+            <div class="url-box">
+                <input type="text" id="url-output" readonly>
+                <button id="copy-btn">Copy</button>
+            </div>
+            <p class="cmd-preview">Minecraftで実行: <span id="mc-cmd"></span></p>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const resultDiv = document.getElementById('result');
+        const urlOutput = document.getElementById('url-output');
+        const copyBtn = document.getElementById('copy-btn');
+        const mcCmd = document.getElementById('mc-cmd');
+
+        // Drag & Drop events
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length) uploadFile(files[0]);
+        });
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) uploadFile(fileInput.files[0]);
+        });
+
+        function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('schematic', file);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.url) {
+                    showResult(data.url);
+                }
+            })
+            .catch(err => console.error(err));
+        }
+
+        function showResult(url) {
+            resultDiv.classList.remove('hidden');
+            urlOutput.value = url;
+            mcCmd.textContent = `/loadschem ${url}`;
+        }
+
+        copyBtn.addEventListener('click', () => {
+            urlOutput.select();
+            document.execCommand('copy');
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => copyBtn.textContent = 'Copy', 2000);
+        });
+    </script>
+</body>
+</html>
